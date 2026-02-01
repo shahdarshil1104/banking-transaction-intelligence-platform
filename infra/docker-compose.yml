@@ -34,3 +34,5 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       # IMPORTANT: use the INTERNAL listener
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  

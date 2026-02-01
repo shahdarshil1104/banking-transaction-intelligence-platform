@@ -57,7 +57,7 @@ if __name__ == "__main__":
             txn = generate_txn()
             producer.send(TOPIC, txn)
             print(txn)
-            time.sleep(0.5)
+            time.sleep(0.001)
     except KeyboardInterrupt:
         pass
     finally:
