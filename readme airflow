@@ -1,0 +1,90 @@
+✅ Airflow + Spark Setup & Debug Runbook (Commands)
+🔹 1️⃣ Activate Python virtual environment (local machine)
+source /Users/faisalmohammed/Downloads/banking-transaction-intelligence-platform-main/airflow_venv/bin/activate
+👉 Activates your local Python env for managing project files & scripts.
+🔹 2️⃣ Go to Airflow Docker project
+cd /Users/faisalmohammed/Downloads/banking-transaction-intelligence-platform-main/airflow_docker
+👉 All Docker + Airflow commands run from here.
+🔹 3️⃣ Bring down any broken containers (reset state)
+docker compose down -v
+👉 Stops containers + deletes volumes (Postgres, Airflow metadata) for clean start.
+🔹 4️⃣ Create Custom Airflow Image (Dockerfile)
+cat > Dockerfile <<'EOF'
+FROM apache/airflow:2.9.1-python3.12
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jre-headless \
+    curl \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+USER airflow
+RUN pip install --no-cache-dir pyspark==3.5.1 apache-airflow-providers-apache-spark
+EOF
+👉 Fixes:
+❌ PySpark missing
+❌ Java missing
+❌ Airflow Spark operator missing
+🔹 5️⃣ Build the custom Airflow image
+docker compose build --no-cache
+👉 Builds airflow-custom:2.9.1 with Java + PySpark + Spark provider.
+🔹 6️⃣ Start all services (Airflow + Postgres + Spark)
+docker compose up -d
+docker compose ps
+👉 Starts:
+airflow-webserver
+airflow-scheduler
+postgres
+spark-master
+spark-worker
+🔹 7️⃣ Verify PySpark + Java inside Airflow container
+docker compose exec airflow-webserver java -version
+docker compose exec airflow-webserver python -c "import pyspark; print('pyspark OK')"
+👉 Confirms:
+Java installed
+PySpark available for DAG tasks
+🔹 8️⃣ Verify your pipeline scripts are mounted
+docker compose exec airflow-webserver ls -lah /opt/project/pipelines
+👉 Confirms:
+bronze_to_silver.py
+silver_to_gold.py
+are accessible to Airflow tasks.
+🔹 9️⃣ Restart Airflow services (reload DAGs)
+docker compose restart airflow-webserver airflow-scheduler
+👉 Forces Airflow to re-read DAG files.
+🔹 🔟 Check DAG import errors
+docker compose exec airflow-webserver airflow dags list-import-errors
+👉 Ensures DAGs are parsed correctly (no missing imports).
+🔹 1️⃣1️⃣ List DAGs
+docker compose exec airflow-webserver airflow dags list | grep banking_data_pipeline
+👉 Confirms your DAG is loaded.
+🔹 1️⃣2️⃣ Unpause DAG
+docker compose exec airflow-webserver airflow dags unpause banking_data_pipeline
+👉 Enables scheduling / manual trigger.
+🔹 1️⃣3️⃣ Trigger DAG run
+docker compose exec airflow-webserver airflow dags trigger banking_data_pipeline
+👉 Starts pipeline:
+Bronze ➝ Silver ➝ Gold
+🔹 1️⃣4️⃣ Monitor DAG runs
+docker compose exec airflow-webserver airflow dags list-runs -d banking_data_pipeline --no-backfill
+👉 Shows:
+running / failed / success DAG runs
+🔹 1️⃣5️⃣ Check task states for a run
+docker compose exec airflow-webserver airflow tasks states-for-dag-run banking_data_pipeline "2026-02-19T19:09:25+00:00"
+👉 Shows:
+bronze_to_silver state
+silver_to_gold state
+🔹 1️⃣6️⃣ View logs (recommended way)
+docker compose logs -f airflow-scheduler
+or
+docker compose logs -f airflow-webserver
+👉 Best way to debug task failures.
+🔹 1️⃣7️⃣ Open Airflow UI
+http://localhost:8080
+Login:
+username: admin
+password: admin
+👉 Visual DAG runs, logs, retries.
