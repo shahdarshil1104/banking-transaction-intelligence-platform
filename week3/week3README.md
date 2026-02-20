@@ -1,14 +1,4 @@
-✅ Step A — Kafka → Bronze (Optional Streaming Scaffold)
-⚠️ Kafka streaming connector was optional due to local dependency issues.
-Bronze ingestion was completed using batch ingestion from Kafka replay.
-File:
-pipelines/kafka_to_bronze_stream.py   (optional scaffold)
-Command (if running streaming):
-spark-submit \
-  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 \
-  pipelines/kafka_to_bronze_stream.py
-
-Step B — Bronze → Silver (Clean + DLQ + Dedup)
+Step A — Bronze → Silver (Clean + DLQ + Dedup)
 File:
 pipelines/bronze_to_silver.py
 Command
@@ -35,7 +25,7 @@ Verification:
 du -sh data/silver/transactions
 find data/silver/transactions -type f | wc -l
 
-Step C — Silver → Gold (KPIs + Features)
+Step B — Silver → Gold (KPIs + Features)
 Daily KPIs
 File:
 pipelines/silver_to_gold.py
@@ -51,7 +41,8 @@ Command:
 spark-submit pipelines/silver_to_gold_merchants.py
 Creates:
 data/gold/merchant_kpis
-✅ Step D — Validation (Spark Shell)
+
+Step C — Validation (Spark Shell)
 spark-shell
 val silver = spark.read.parquet("data/silver/transactions/*")
 silver.count()
@@ -64,7 +55,8 @@ goldCust.orderBy(org.apache.spark.sql.functions.desc("total_spend")).show(10, fa
 
 val merchants = spark.read.parquet("data/gold/merchant_kpis")
 merchants.orderBy(org.apache.spark.sql.functions.desc("high_risk_rate")).show(10, false)
-📊 Final Metrics
+
+Final Metrics
 Layer	Rows
 Bronze	2,647,668
 Silver	2,647,668
